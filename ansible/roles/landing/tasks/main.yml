@@ -1,0 +1,53 @@
+---
+# ansible/roles/landing/tasks/main.yml
+# Deploy landing page as static site
+
+- name: Ensure landing app exists in Dokku
+  command: dokku apps:create landing
+  ignore_errors: yes
+
+- name: Set nginx buildpack for static site
+  command: dokku buildpacks:set landing https://github.com/dokku/buildpack-nginx.git
+  ignore_errors: yes
+
+- name: Copy landing dist files to temp directory
+  copy:
+    src: "{{ playbook_dir }}/../landing/app/dist/"
+    dest: /tmp/landing-deploy/
+    mode: '0755'
+
+- name: Initialize git repo for landing
+  command: git init
+  args:
+    chdir: /tmp/landing-deploy/
+
+- name: Add all files to git
+  command: git add .
+  args:
+    chdir: /tmp/landing-deploy/
+
+- name: Commit landing files
+  command: git commit -m "Landing deployment {{ ansible_date_time.iso8601 }}"
+  args:
+    chdir: /tmp/landing-deploy/
+  ignore_errors: yes
+
+- name: Add dokku remote
+  command: git remote add dokku dokku@localhost:landing
+  args:
+    chdir: /tmp/landing-deploy/
+  ignore_errors: yes
+
+- name: Deploy landing to Dokku
+  command: git push dokku main --force
+  args:
+    chdir: /tmp/landing-deploy/
+  ignore_errors: yes
+
+- name: Configure domain for landing
+  command: dokku domains:set landing clawtech.ru www.clawtech.ru
+  ignore_errors: yes
+
+- name: Enable SSL for landing
+  command: dokku letsencrypt:enable landing
+  ignore_errors: yes
