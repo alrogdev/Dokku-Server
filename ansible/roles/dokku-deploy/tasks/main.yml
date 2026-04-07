@@ -1,0 +1,45 @@
+---
+# ansible/roles/dokku-deploy/tasks/main.yml
+# Create dokku-deploy user for application deployment
+
+- name: Create dokku-deploy user
+  user:
+    name: dokku-deploy
+    shell: /bin/bash
+    groups: dokku
+    append: yes
+    create_home: yes
+
+- name: Ensure .ssh directory exists
+  file:
+    path: /home/dokku-deploy/.ssh
+    state: directory
+    owner: dokku-deploy
+    group: dokku-deploy
+    mode: '0700'
+
+- name: Add SSH public key for dokku-deploy
+  authorized_key:
+    user: dokku-deploy
+    key: "{{ lookup('file', '{{ playbook_dir }}/../keys/dokku-deploy/id_ed25519.pub') }}"
+    state: present
+
+- name: Set proper permissions on authorized_keys
+  file:
+    path: /home/dokku-deploy/.ssh/authorized_keys
+    owner: dokku-deploy
+    group: dokku-deploy
+    mode: '0600'
+
+- name: Ensure dokku-deploy can use dokku commands
+  command: dokku version
+  become_user: dokku-deploy
+  register: dokku_version
+  ignore_errors: yes
+
+- name: Display dokku-deploy setup info
+  debug:
+    msg:
+      - "dokku-deploy user created successfully"
+      - "SSH access: ssh -p {{ ssh_port }} -i keys/dokku-deploy/id_ed25519 dokku-deploy@{{ domain }}"
+      - "Dokku version: {{ dokku_version.stdout | default('N/A') }}"
