@@ -7,8 +7,8 @@ CHAT_ID="{{ telegram_chat_id }}"
 HOSTNAME=$(hostname)
 DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
-# Run AIDE check
-RESULT=$(aide --check 2>&1)
+# Run AIDE check with explicit config
+RESULT=$(aide -c /etc/aide/aide.conf --check 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
