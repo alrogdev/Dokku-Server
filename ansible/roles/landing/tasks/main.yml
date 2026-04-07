@@ -45,7 +45,7 @@
   ignore_errors: yes
 
 - name: Configure domain for landing
-  command: dokku domains:set landing clawtech.ru www.clawtech.ru
+  command: dokku domains:set landing {{ domain }} www.{{ domain }}
   ignore_errors: yes
 
 - name: Enable SSL for landing
