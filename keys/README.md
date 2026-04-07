@@ -1,60 +1,99 @@
 # SSH Keys for Dokku PaaS
 
-## clawtech-vps.pem
+**⚠️ IMPORTANT:** Private keys are stored outside this repository for security.
 
-**Purpose:** SSH access to VPS as root (port 2233)
+---
 
-**Owner:** You generate and provide this key
+## Root Access (clawtech-vps)
 
-**Usage:**
+**User:** root  
+**Host:** clawtech.ru  
+**Port:** 2233  
+**Key Location:** `.opencode/private/PETS-keys` (outside git)  
+**Symlink:** `keys/clawtech-vps.pem` → `../.opencode/private/PETS-keys`
+
+### Usage
+
 ```bash
+# Via symlink
 ssh -p 2233 -i keys/clawtech-vps.pem root@clawtech.ru
+
+# Or directly from private location
+ssh -p 2233 -i .opencode/private/PETS-keys root@clawtech.ru
 ```
 
-**Permissions:**
+### Permissions
+
 ```bash
 chmod 600 keys/clawtech-vps.pem
 ```
 
 ---
 
-## dokku-deploy/ Directory
+## Dokku-Deploy Access
 
-Contains SSH keys for dokku-deploy user (automated deployment).
+**User:** dokku-deploy  
+**Host:** clawtech.ru  
+**Port:** 2233  
+**Key Location:** `keys/dokku-deploy/id_ed25519` (auto-generated, in git)
 
-**Files:**
-- `id_ed25519` - Private key (generated automatically)
-- `id_ed25519.pub` - Public key (generated automatically)
+### Usage
 
-**Usage for deployment:**
 ```bash
-# Add to ssh-agent
-ssh-add keys/dokku-deploy/id_ed25519
+# For deployment
+ssh -p 2233 -i keys/dokku-deploy/id_ed25519 dokku-deploy@clawtech.ru
 
-# Or specify directly
+# Or add to ssh-agent
+ssh-add keys/dokku-deploy/id_ed25519
 git push dokku main
 ```
 
 ---
 
-## Key Generation Instructions
+## Security Notes
 
-### For root access (you generate):
-```bash
-ssh-keygen -t ed25519 -f clawtech-vps -C "root@clawtech.ru"
-# Enter passphrase (recommended) or leave empty
-# Provide private key (clawtech-vps) to this project
-# Keep public key (clawtech-vps.pub) for reference
-```
-
-### For dokku-deploy (auto-generated):
-Already generated in `dokku-deploy/` directory.
+- **Root key (PETS-keys):** Stored in `.opencode/private/` (never in git)
+- **Dokku-deploy key:** Auto-generated, passphrase-less for CI/CD
+- **Never commit private keys to git**
+- **Use passphrase for root key** (already set by you)
+- **Restrict root key access** (only from trusted IPs)
 
 ---
 
-## Security Notes
+## Key Generation (if needed)
 
-- Never commit private keys to git
-- Keep `.pem` and `id_ed25519` files secure
-- Use passphrase for root key (clawtech-vps)
-- dokku-deploy key can be without passphrase for CI/CD
+### For root access (you already have):
+```bash
+# Your keys are already in .opencode/private/
+# Symlinks created automatically
+```
+
+### For dokku-deploy (auto-generated):
+```bash
+ssh-keygen -t ed25519 -f keys/dokku-deploy/id_ed25519 -N "" -C "dokku-deploy@clawtech.ru"
+```
+
+---
+
+## Troubleshooting
+
+### Permission denied
+```bash
+# Check permissions
+ls -la keys/
+# Should be: -rw------- (600) for private keys
+
+# Fix permissions
+chmod 600 keys/clawtech-vps.pem
+chmod 600 keys/dokku-deploy/id_ed25519
+```
+
+### Key not found
+```bash
+# Verify symlinks
+ls -la keys/clawtech-vps.pem
+# Should point to: ../.opencode/private/PETS-keys
+
+# If broken, recreate:
+cd keys && ln -sf ../.opencode/private/PETS-keys clawtech-vps.pem
+```
