@@ -51,3 +51,12 @@
 - name: Enable SSL for landing
   command: dokku letsencrypt:enable landing
   ignore_errors: yes
+
+- name: Setup SSL autorenew cron job
+  cron:
+    name: "Dokku SSL autorenew"
+    minute: "0"
+    hour: "2"
+    job: "/usr/bin/dokku letsencrypt:auto-renew"
+    user: root
+  ignore_errors: yes
