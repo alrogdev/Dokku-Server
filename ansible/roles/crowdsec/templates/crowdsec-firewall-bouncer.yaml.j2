@@ -1,0 +1,42 @@
+mode: nftables
+pid_dir: /var/run/
+update_frequency: 10s
+daemonize: true
+log_mode: file
+log_dir: /var/log/
+log_level: info
+log_compression: true
+log_max_size: 100
+log_max_backups: 3
+log_max_age: 30
+api_url: http://localhost:8080/
+{% if bouncer_api_key is defined and bouncer_api_key.stdout is defined %}
+api_key: {{ bouncer_api_key.stdout }}
+{% else %}
+# API key will be set after bouncer registration
+api_key: ${API_KEY}
+{% endif %}
+disable_ipv6: false
+deny_action: DROP
+deny_log: false
+supported_decisions_types:
+  - ban
+  - throttle
+  - captcha
+only_include_decisions_from: []
+blacklists_ipv4: crowdsec-blacklists
+blacklists_ipv6: crowdsec6-blacklists
+# nftables configuration
+nftables:
+  ipv4:
+    enabled: true
+    set_name: crowdsec-blacklists
+    table: crowdsec
+    chain: crowdsec-chain
+    priority: -10
+  ipv6:
+    enabled: true
+    set_name: crowdsec6-blacklists
+    table: crowdsec6
+    chain: crowdsec6-chain
+    priority: -10

@@ -37,6 +37,24 @@
   loop: "{{ crowdsec_collections }}"
   ignore_errors: yes
 
+- name: Check if firewall bouncer is registered
+  command: cscli bouncers list
+  register: bouncer_list
+  ignore_errors: yes
+
+- name: Register firewall bouncer
+  command: cscli bouncers add firewall-bouncer -o raw
+  register: bouncer_api_key
+  when: "'firewall-bouncer' not in bouncer_list.stdout"
+  ignore_errors: yes
+
+- name: Configure firewall bouncer
+  template:
+    src: crowdsec-firewall-bouncer.yaml.j2
+    dest: /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+    mode: '0600'
+  notify: reload crowdsec-firewall-bouncer
+
 - name: Create Telegram notification script
   template:
     src: telegram-notify.sh.j2

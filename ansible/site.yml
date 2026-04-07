@@ -58,9 +58,15 @@
 
     - name: Install Dokku
       shell: |
-        wget -qO- https://dokku.com/install.sh | sudo DOKKU_TAG={{ dokku_version }} bash
+        wget -qO- https://dokku.com/install.sh | bash
       args:
         creates: /usr/bin/dokku
+
+    - name: Wait for Dokku to be available
+      wait_for:
+        path: /usr/bin/dokku
+        state: present
+        timeout: 60
 
     - name: Configure Dokku global domain
       command: dokku domains:set-global {{ domain }}
@@ -109,7 +115,7 @@
   handlers:
     - name: restart ssh
       systemd:
-        name: sshd
+        name: ssh
         state: restarted
 
 # Security roles

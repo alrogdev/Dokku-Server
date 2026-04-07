@@ -1,0 +1,24 @@
+---
+# ansible/roles/dokku-install/tasks/main.yml
+# Install Dokku
+
+- name: Download and install Dokku
+  shell: |
+    wget -qO- https://dokku.com/install.sh | bash
+  args:
+    creates: /usr/bin/dokku
+
+- name: Wait for Dokku to be available
+  wait_for:
+    path: /usr/bin/dokku
+    state: present
+    timeout: 60
+
+- name: Configure Dokku global domain
+  command: dokku domains:set-global {{ domain }}
+  ignore_errors: yes
+
+- name: Install Dokku plugins
+  command: dokku plugin:install {{ item.url }} {{ item.name }}
+  loop: "{{ dokku_plugins }}"
+  ignore_errors: yes

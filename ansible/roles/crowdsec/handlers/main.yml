@@ -5,3 +5,8 @@
   systemd:
     name: crowdsec
     state: reloaded
+
+- name: reload crowdsec-firewall-bouncer
+  systemd:
+    name: crowdsec-firewall-bouncer
+    state: restarted

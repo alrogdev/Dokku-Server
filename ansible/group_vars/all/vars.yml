@@ -25,18 +25,13 @@ telegram_chat_id: "1631006"
 # CrowdSec Collections
 crowdsec_collections:
   - crowdsecurity/nginx
-  - crowdsecurity/docker
   - crowdsecurity/sshd
   - crowdsecurity/linux
-  - crowdsecurity/postgresql
+  - crowdsecurity/pgsql
   - crowdsecurity/base-http-scenarios
   - crowdsecurity/appsec-virtual-patching
   - crowdsecurity/appsec-generic-rules
   - crowdsecurity/auditd
-  - crowdsecurity/auditd-postexploit-exec-from-net
-  - crowdsecurity/ssh-slow-bf
-  - crowdsecurity/ssh-bf_user-enum
-  - crowdsecurity/iptables-scan-multi_ports
 
 # Dokku Configuration
 dokku_version: "latest"

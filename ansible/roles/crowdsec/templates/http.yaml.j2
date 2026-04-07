@@ -4,7 +4,7 @@ log_level: info
 format: |
   {
     "chat_id": "{{ telegram_chat_id }}",
-    "text": "🚨 <b>CrowdSec Alert</b> - {{ server_hostname }}\n\n{{range . -}}{{range .Decisions -}}🔴 {{.Value}} banned for {{.Duration}}\n📋 Scenario: {{.Scenario}}\n{{end -}}{{end -}}\n⏰ {{range . -}}{{.CreatedAt}}{{end -}}",
+    "text": "🚨 <b>CrowdSec Alert</b> - {{ server_hostname }}\n\n{% raw %}{{range . -}}{{range .Decisions -}}{% endraw %}🔴 {% raw %}{{.Value}}{% endraw %} banned for {% raw %}{{.Duration}}{% endraw %}\n📋 Scenario: {% raw %}{{.Scenario}}{% endraw %}\n{% raw %}{{end -}}{{end -}}{% endraw %}\n⏰ {% raw %}{{range . -}}{{.CreatedAt}}{{end -}}{% endraw %}",
     "parse_mode": "HTML"
   }
 url: https://api.telegram.org/bot{{ telegram_bot_token }}/sendMessage
