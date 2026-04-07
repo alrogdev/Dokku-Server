@@ -4,7 +4,7 @@
 
 # Server Configuration
 # Change these when migrating to new VPS
-server_ip: "80.93.63.169"
+server_ip: "31.177.83.27"
 server_hostname: "clawtech"
 domain: "clawtech.ru"
 
