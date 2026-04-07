@@ -7,6 +7,9 @@
   become: yes
   gather_facts: yes
 
+  vars:
+    telegram_bot_token: "{{ lookup('env', 'TELEGRAM_BOT_TOKEN') }}"
+
   tasks:
     - name: Update apt cache
       apt:
@@ -29,11 +32,15 @@
           - htop
           - ncdu
           - fail2ban
-          - ufw
-          - docker.io
-          - docker-compose
           - python3-pip
           - python3-docker
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker.io
+          - docker-compose
         state: present
 
     - name: Start and enable Docker
@@ -102,5 +109,9 @@
         state: restarted
 
   roles:
+    - nftables
+    - crowdsec
+    - aide
+    - lynis
     - dokku-deploy
     - landing

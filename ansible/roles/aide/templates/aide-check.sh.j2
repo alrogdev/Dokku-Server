@@ -1,0 +1,32 @@
+#!/bin/bash
+# /usr/local/bin/aide-check.sh
+# AIDE integrity check with Telegram notifications
+
+TOKEN="{{ telegram_bot_token }}"
+CHAT_ID="{{ telegram_chat_id }}"
+HOSTNAME=$(hostname)
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Run AIDE check
+RESULT=$(aide --check 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    # Changes detected - send alert
+    MESSAGE="🚨 <b>AIDE Alert</b> - ${HOSTNAME}
+📅 ${DATE}
+⚠️ File integrity changes detected!
+
+<pre>${RESULT}</pre>"
+    
+    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+        -d "chat_id=${CHAT_ID}" \
+        -d "text=${MESSAGE}" \
+        -d "parse_mode=HTML" > /dev/null 2>&1
+    
+    echo "[$DATE] ALERT: Changes detected"
+else
+    echo "[$DATE] OK: No changes detected"
+fi
+
+exit $EXIT_CODE

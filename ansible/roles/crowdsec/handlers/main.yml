@@ -1,0 +1,7 @@
+---
+# ansible/roles/crowdsec/handlers/main.yml
+
+- name: reload crowdsec
+  systemd:
+    name: crowdsec
+    state: reloaded

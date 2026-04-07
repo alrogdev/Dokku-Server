@@ -1,0 +1,58 @@
+#!/usr/sbin/nft -f
+# /etc/nftables.conf
+# Firewall configuration with whitelist support
+
+flush ruleset
+
+table inet filter {
+    # Define whitelist set
+    set whitelist {
+        type ipv4_addr
+        flags interval
+        elements = { {% for ip in whitelist_ips %}"{{ ip }}"{% if not loop.last %}, {% endif %}{% endfor %} }
+    }
+
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # Allow loopback
+        iif "lo" accept
+
+        # Allow established and related connections
+        ct state established,related accept
+
+        # Allow whitelisted IPs (full access)
+        ip saddr @whitelist accept
+
+        # Allow SSH (port {{ ssh_port }})
+        tcp dport {{ ssh_port }} ct state new accept
+
+        # Allow HTTP and HTTPS
+        tcp dport { 80, 443 } ct state new accept
+
+        # Allow Dokku git push (port 22 for dokku)
+        tcp dport 22 ct state new accept
+
+        # Rate limiting for SSH (non-whitelisted)
+        tcp dport {{ ssh_port }} limit rate 5/minute burst 10 packets accept
+
+        # Log and drop everything else
+        log prefix "nftables-dropped: " limit rate 5/minute
+        counter drop
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # Allow Docker containers
+        iifname "docker0" oifname "eth0" accept
+        iifname "eth0" oifname "docker0" ct state established,related accept
+
+        # Allow established connections
+        ct state established,related accept
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}

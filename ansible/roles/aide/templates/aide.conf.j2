@@ -1,0 +1,70 @@
+# AIDE configuration
+# /etc/aide/aide.conf
+
+# Database settings
+database=file:/var/lib/aide/aide.db
+database_out=file:/var/lib/aide/aide.db.new
+database_new=file:/var/lib/aide/aide.db.new
+
+# Verbosity level
+verbose=5
+
+# Report settings
+report_url=stdout
+report_url=file:/var/log/aide/aide.log
+
+# Rule definitions
+NORMAL = p+i+n+u+g+s+m+c+acl+selinux+xattrs+md5+sha1
+LOG = p+u+g+n+S+acl+selinux+xattrs
+DIR = p+u+g+n+S+acl+selinux+xattrs
+PERMS = p+u+g+acl+selinux
+
+# Files to monitor
+/boot   NORMAL
+/bin    NORMAL
+/sbin   NORMAL
+/lib    NORMAL
+/lib64  NORMAL
+/opt    NORMAL
+/usr    NORMAL
+
+# Configuration files
+/etc    PERMS
+/etc/hosts.allow PERMS
+/etc/hosts.deny PERMS
+/etc/fstab PERMS
+/etc/passwd PERMS
+/etc/shadow PERMS
+/etc/group PERMS
+/etc/gshadow PERMS
+/etc/security PERMS
+/etc/ssh PERMS
+/etc/crontab PERMS
+/etc/cron.d PERMS
+/etc/cron.daily PERMS
+/etc/cron.hourly PERMS
+/etc/cron.weekly PERMS
+/etc/cron.monthly PERMS
+/etc/init.d PERMS
+/etc/systemd PERMS
+
+# Log files (don't check content, just permissions)
+/var/log LOG
+
+# Dokku specific
+/home/dokku PERMS
+/var/lib/dokku PERMS
+
+# Exclude directories
+!/var/log/aide
+!/var/log/crowdsec
+!/var/lib/aide
+!/tmp
+!/var/tmp
+!/proc
+!/sys
+!/dev
+!/run
+!/var/run
+!/var/cache
+!/var/spool

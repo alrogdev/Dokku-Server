@@ -1,0 +1,24 @@
+name: default_ip_remediation
+filter: "Alert.Remediation == true && Alert.GetScope() == 'Ip'"
+decisions:
+  - type: ban
+    duration: 4h
+notifications:
+  - telegram_notification
+on_success: break
+
+---
+name: default_range_remediation
+filter: "Alert.Remediation == true && Alert.GetScope() == 'Range'"
+decisions:
+  - type: ban
+    duration: 4h
+notifications:
+  - telegram_notification
+on_success: break
+
+---
+name: telegram_notification
+filter: "Alert.Remediation == true"
+notifications:
+  - telegram

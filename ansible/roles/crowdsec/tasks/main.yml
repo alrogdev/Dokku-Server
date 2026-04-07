@@ -1,0 +1,76 @@
+---
+# ansible/roles/crowdsec/tasks/main.yml
+# Install and configure CrowdSec with Telegram notifications
+
+- name: Install required packages for CrowdSec
+  apt:
+    name:
+      - curl
+      - gnupg
+      - apt-transport-https
+    state: present
+
+- name: Add CrowdSec GPG key
+  apt_key:
+    url: https://packagecloud.io/crowdsec/crowdsec/gpgkey
+    state: present
+
+- name: Add CrowdSec repository
+  apt_repository:
+    repo: "deb https://packagecloud.io/crowdsec/crowdsec/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} main"
+    state: present
+    filename: crowdsec
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install CrowdSec
+  apt:
+    name:
+      - crowdsec
+      - crowdsec-firewall-bouncer-nftables
+    state: present
+
+- name: Install CrowdSec collections
+  command: "cscli collections install {{ item }}"
+  loop: "{{ crowdsec_collections }}"
+  ignore_errors: yes
+
+- name: Create Telegram notification script
+  template:
+    src: telegram-notify.sh.j2
+    dest: /usr/local/bin/crowdsec-telegram-notify.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Configure CrowdSec profiles
+  template:
+    src: profiles.yaml.j2
+    dest: /etc/crowdsec/profiles.yaml
+    mode: '0644'
+  notify: reload crowdsec
+
+- name: Enable and start CrowdSec
+  systemd:
+    name: crowdsec
+    state: started
+    enabled: yes
+
+- name: Enable and start CrowdSec firewall bouncer
+  systemd:
+    name: crowdsec-firewall-bouncer
+    state: started
+    enabled: yes
+
+- name: Display CrowdSec status
+  command: cscli metrics
+  register: crowdsec_metrics
+  ignore_errors: yes
+
+- name: Show CrowdSec info
+  debug:
+    msg:
+      - "CrowdSec installed successfully"
+      - "Metrics: {{ crowdsec_metrics.stdout | default('N/A') }}"

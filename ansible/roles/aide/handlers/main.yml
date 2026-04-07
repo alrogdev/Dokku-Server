@@ -1,0 +1,6 @@
+---
+# ansible/roles/aide/handlers/main.yml
+
+- name: init aide
+  command: aideinit
+  ignore_errors: yes

@@ -1,0 +1,36 @@
+---
+# ansible/roles/lynis/tasks/main.yml
+# Install and configure Lynis for security auditing
+
+- name: Install Lynis
+  apt:
+    name: lynis
+    state: present
+
+- name: Create Lynis audit script
+  template:
+    src: lynis-audit.sh.j2
+    dest: /usr/local/bin/lynis-audit.sh
+    mode: '0755'
+
+- name: Create Lynis cron job (weekly on Sundays)
+  cron:
+    name: "Lynis security audit"
+    minute: "0"
+    hour: "{{ lynis_check_time.split(':')[0] }}"
+    weekday: "0"
+    job: "/usr/local/bin/lynis-audit.sh >> /var/log/lynis-cron.log 2>&1"
+    user: root
+
+- name: Ensure Lynis log directory exists
+  file:
+    path: /var/log/lynis
+    state: directory
+    mode: '0755'
+
+- name: Display Lynis status
+  debug:
+    msg:
+      - "Lynis installed successfully"
+      - "Weekly audit at: {{ lynis_check_time }} UTC on Sundays"
+      - "Logs: /var/log/lynis/"

@@ -1,0 +1,33 @@
+---
+# ansible/roles/nftables/tasks/main.yml
+# Configure nftables firewall with whitelist support
+
+- name: Install nftables
+  apt:
+    name: nftables
+    state: present
+
+- name: Configure nftables
+  template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    mode: '0644'
+    validate: 'nft -c -f %s'
+  notify: restart nftables
+
+- name: Enable and start nftables
+  systemd:
+    name: nftables
+    state: started
+    enabled: yes
+
+- name: Display nftables status
+  command: nft list ruleset
+  register: nftables_rules
+  ignore_errors: yes
+
+- name: Show nftables info
+  debug:
+    msg:
+      - "nftables configured successfully"
+      - "Rules: {{ nftables_rules.stdout | default('N/A') }}"

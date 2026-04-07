@@ -1,0 +1,55 @@
+---
+# ansible/roles/aide/tasks/main.yml
+# Install and configure AIDE for file integrity monitoring
+
+- name: Install AIDE
+  apt:
+    name:
+      - aide
+      - aide-common
+    state: present
+
+- name: Configure AIDE
+  template:
+    src: aide.conf.j2
+    dest: /etc/aide/aide.conf
+    mode: '0644'
+  notify: init aide
+
+- name: Create AIDE check script
+  template:
+    src: aide-check.sh.j2
+    dest: /usr/local/bin/aide-check.sh
+    mode: '0755'
+
+- name: Create AIDE cron job
+  cron:
+    name: "AIDE integrity check"
+    minute: "0"
+    hour: "{{ aide_check_time.split(':')[0] }}"
+    job: "/usr/local/bin/aide-check.sh >> /var/log/aide-check.log 2>&1"
+    user: root
+
+- name: Ensure AIDE database directory exists
+  file:
+    path: /var/lib/aide
+    state: directory
+    mode: '0755'
+
+- name: Check if AIDE database exists
+  stat:
+    path: /var/lib/aide/aide.db
+  register: aide_db
+
+- name: Initialize AIDE database (first run)
+  command: aideinit
+  when: not aide_db.stat.exists
+  ignore_errors: yes
+
+- name: Display AIDE status
+  debug:
+    msg:
+      - "AIDE installed successfully"
+      - "Configuration: /etc/aide/aide.conf"
+      - "Database: /var/lib/aide/aide.db"
+      - "Daily check at: {{ aide_check_time }} UTC"
