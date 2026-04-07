@@ -62,11 +62,20 @@
       args:
         creates: /usr/bin/dokku
 
-    - name: Wait for Dokku to be available
-      wait_for:
-        path: /usr/bin/dokku
-        state: present
-        timeout: 60
+    - name: Find dokku binary
+      find:
+        paths: /usr/bin
+        patterns: dokku
+      register: dokku_binary
+      ignore_errors: yes
+
+    - name: Create dokku symlink if not in path
+      file:
+        src: /usr/local/bin/dokku
+        dest: /usr/bin/dokku
+        state: link
+      when: dokku_binary.matched == 0
+      ignore_errors: yes
 
     - name: Configure Dokku global domain
       command: dokku domains:set-global {{ domain }}
