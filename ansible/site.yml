@@ -1,0 +1,106 @@
+---
+# ansible/site.yml
+# Main Ansible playbook for Dokku PaaS server setup
+
+- name: Configure Dokku PaaS Server
+  hosts: prod
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+
+    - name: Install essential packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - ncdu
+          - fail2ban
+          - ufw
+          - docker.io
+          - docker-compose
+          - python3-pip
+          - python3-docker
+        state: present
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install Dokku
+      shell: |
+        wget -qO- https://dokku.com/install.sh | sudo DOKKU_TAG={{ dokku_version }} bash
+      args:
+        creates: /usr/bin/dokku
+
+    - name: Configure Dokku global domain
+      command: dokku domains:set-global {{ domain }}
+      ignore_errors: yes
+
+    - name: Install Dokku plugins
+      command: dokku plugin:install {{ item.url }} {{ item.name }}
+      loop: "{{ dokku_plugins }}"
+      ignore_errors: yes
+
+    - name: Configure SSH port
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port '
+        line: 'Port {{ ssh_port }}'
+        backup: yes
+      notify: restart ssh
+
+    - name: Configure PermitRootLogin
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin {{ ssh_permit_root_login }}'
+        backup: yes
+      notify: restart ssh
+
+    - name: Configure PasswordAuthentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        backup: yes
+      notify: restart ssh
+
+    - name: Configure PubkeyAuthentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+        backup: yes
+      notify: restart ssh
+
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: sshd
+        state: restarted
+
+  roles:
+    - dokku-deploy
+    - landing
