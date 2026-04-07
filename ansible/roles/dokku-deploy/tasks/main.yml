@@ -6,9 +6,8 @@
   user:
     name: dokku-deploy
     shell: /bin/bash
-    groups: dokku
-    append: yes
     create_home: yes
+  ignore_errors: yes
 
 - name: Ensure .ssh directory exists
   file:

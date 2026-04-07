@@ -2,7 +2,8 @@
 # ansible/site.yml
 # Main Ansible playbook for Dokku PaaS server setup
 
-- name: Configure Dokku PaaS Server
+# Pre-tasks: Base system setup
+- name: Base System Setup
   hosts: prod
   become: yes
   gather_facts: yes
@@ -102,16 +103,36 @@
         backup: yes
       notify: restart ssh
 
+    - name: Restart SSH immediately
+      meta: flush_handlers
+
   handlers:
     - name: restart ssh
       systemd:
         name: sshd
         state: restarted
 
+# Security roles
+- name: Security Setup
+  hosts: prod
+  become: yes
+  gather_facts: yes
+
+  vars:
+    telegram_bot_token: "{{ lookup('env', 'TELEGRAM_BOT_TOKEN') }}"
+
   roles:
     - nftables
     - crowdsec
     - aide
     - lynis
+
+# Dokku deployment setup
+- name: Dokku Deployment Setup
+  hosts: prod
+  become: yes
+  gather_facts: yes
+
+  roles:
     - dokku-deploy
     - landing
