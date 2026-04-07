@@ -4,7 +4,7 @@ decisions:
   - type: ban
     duration: 4h
 notifications:
-  - telegram_notification
+  - telegram
 on_success: break
 
 ---
@@ -14,11 +14,5 @@ decisions:
   - type: ban
     duration: 4h
 notifications:
-  - telegram_notification
-on_success: break
-
----
-name: telegram_notification
-filter: "Alert.Remediation == true"
-notifications:
   - telegram
+on_success: break

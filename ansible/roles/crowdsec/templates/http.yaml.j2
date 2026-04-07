@@ -1,0 +1,13 @@
+type: http
+name: telegram
+log_level: info
+format: |
+  {
+    "chat_id": "{{ telegram_chat_id }}",
+    "text": "🚨 <b>CrowdSec Alert</b> - {{ server_hostname }}\n\n{{range . -}}{{range .Decisions -}}🔴 {{.Value}} banned for {{.Duration}}\n📋 Scenario: {{.Scenario}}\n{{end -}}{{end -}}\n⏰ {{range . -}}{{.CreatedAt}}{{end -}}",
+    "parse_mode": "HTML"
+  }
+url: https://api.telegram.org/bot{{ telegram_bot_token }}/sendMessage
+method: POST
+headers:
+  Content-Type: "application/json"

@@ -45,6 +45,13 @@
     owner: root
     group: root
 
+- name: Configure CrowdSec HTTP plugin for Telegram
+  template:
+    src: http.yaml.j2
+    dest: /etc/crowdsec/notifications/http.yaml
+    mode: '0644'
+  notify: reload crowdsec
+
 - name: Configure CrowdSec profiles
   template:
     src: profiles.yaml.j2
