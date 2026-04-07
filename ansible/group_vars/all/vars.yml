@@ -1,0 +1,63 @@
+---
+# ansible/group_vars/all/vars.yml
+# Central configuration for VPS
+
+# Server Configuration
+# Change these when migrating to new VPS
+server_ip: "80.93.63.169"
+server_hostname: "clawtech"
+domain: "clawtech.ru"
+
+# SSH Configuration
+ssh_port: 2233
+ssh_permit_root_login: prohibit-password
+
+# Whitelist IPs (CRITICAL - never remove)
+# These IPs are whitelisted in both nftables and CrowdSec
+whitelist_ips:
+  - "62.76.130.37"      # Owner IPv4
+  - "43.98.167.164"     # Agent IPv4
+
+# Telegram Bot Configuration
+telegram_chat_id: "1631006"
+# TELEGRAM_BOT_TOKEN should be set via environment variable
+
+# CrowdSec Collections
+crowdsec_collections:
+  - crowdsecurity/nginx
+  - crowdsecurity/docker
+  - crowdsecurity/sshd
+  - crowdsecurity/linux
+  - crowdsecurity/postgresql
+  - crowdsecurity/base-http-scenarios
+  - crowdsecurity/appsec-virtual-patching
+  - crowdsecurity/appsec-generic-rules
+  - crowdsecurity/auditd
+  - crowdsecurity/auditd-postexploit-exec-from-net
+  - crowdsecurity/ssh-slow-bf
+  - crowdsecurity/ssh-bf_user-enum
+  - crowdsecurity/iptables-scan-multi_ports
+
+# Dokku Configuration
+dokku_version: "latest"
+dokku_plugins:
+  - name: postgres
+    url: https://github.com/dokku/dokku-postgres.git
+  - name: redis
+    url: https://github.com/dokku/dokku-redis.git
+  - name: letsencrypt
+    url: https://github.com/dokku/dokku-letsencrypt.git
+
+# Monitoring Configuration
+aide_check_time: "23:00"  # UTC (02:00 MSK)
+lynis_check_time: "00:00"  # UTC (03:00 MSK) Sundays
+geoip_update_time: "01:00"  # UTC (04:00 MSK) Sundays
+crowdsec_report_interval: "6h"
+resource_monitor_interval: "5min"
+
+# Resource Thresholds
+cpu_threshold: 90
+ram_threshold: 90
+disk_threshold: 90
+resource_window_minutes: 20
+alert_cooldown_seconds: 3600
