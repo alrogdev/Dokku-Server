@@ -2,6 +2,18 @@
 # ansible/roles/landing/tasks/main.yml
 # Deploy landing page as static site
 
+- name: Check dist directory exists locally
+  stat:
+    path: "{{ playbook_dir }}/../landing/app/dist/index.html"
+  delegate_to: localhost
+  register: dist_index
+
+- name: Fail if dist not built
+  fail:
+    msg: "Landing page dist not built. Run 'npm run build' in landing/app/ first."
+  when: not dist_index.stat.exists
+  delegate_to: localhost
+
 - name: Ensure landing app exists in Dokku
   command: dokku apps:create landing
   ignore_errors: yes

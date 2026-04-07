@@ -6,11 +6,19 @@
   shell: |
     wget -qO- https://dokku.com/install.sh | bash
   args:
-    creates: /usr/bin/dokku
+    creates: /usr/local/bin/dokku
+
+- name: Create symlink to /usr/bin/dokku
+  file:
+    src: /usr/local/bin/dokku
+    dest: /usr/bin/dokku
+    state: link
+    force: yes
+  ignore_errors: yes
 
 - name: Wait for Dokku to be available
   wait_for:
-    path: /usr/bin/dokku
+    path: /usr/local/bin/dokku
     state: present
     timeout: 60
 

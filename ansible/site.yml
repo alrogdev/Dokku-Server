@@ -149,5 +149,7 @@
   gather_facts: yes
 
   roles:
-    - dokku-deploy
-    - landing
+    - role: dokku-deploy
+      tags: [dokku-deploy]
+    - role: landing
+      tags: [landing]
