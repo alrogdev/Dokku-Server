@@ -37,3 +37,13 @@ class TestMCPServer:
         assert "get_logs" in tool_names
         assert "restart_app" in tool_names
         assert "run_command" in tool_names
+
+    @pytest.mark.asyncio
+    async def test_config_tools_registered(self):
+        """Test that config tools are registered."""
+        mcp = get_mcp_server()
+        tools = await mcp.list_tools()
+        tool_names = [tool.name for tool in tools]
+
+        assert "get_config" in tool_names
+        assert "set_config" in tool_names

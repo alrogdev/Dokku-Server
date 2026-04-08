@@ -21,6 +21,7 @@ mcp = FastMCP(
 # Import tools to register them
 from kimidokku.tools import apps
 from kimidokku.tools import logs
+from kimidokku.tools import config_tools
 
 
 def get_mcp_server() -> FastMCP:
