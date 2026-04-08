@@ -45,9 +45,10 @@ async def lifespan(app: FastAPI):
 
 async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     """Handle rate limit exceeded errors."""
+    retry_after = exc.headers.get("Retry-After") if exc.headers else None
     return JSONResponse(
         status_code=429,
-        content={"detail": "Rate limit exceeded", "retry_after": exc.headers.get("Retry-After")},
+        content={"detail": "Rate limit exceeded", "retry_after": retry_after},
     )
 
 
