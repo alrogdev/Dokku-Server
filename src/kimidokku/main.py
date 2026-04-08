@@ -14,6 +14,7 @@ from kimidokku.csrf import get_csrf
 from kimidokku.database import init_database
 from kimidokku.mcp_server import get_mcp_server
 from kimidokku.middleware.rate_limiter import limiter
+from kimidokku.middleware.security_headers import SecurityHeadersMiddleware
 from kimidokku.routers import ui, webhooks
 from fastapi.templating import Jinja2Templates
 
@@ -51,6 +52,9 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+
+    # Add security headers middleware (first to process response last)
+    app.add_middleware(SecurityHeadersMiddleware)
 
     # Add rate limiting
     app.state.limiter = limiter

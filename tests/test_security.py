@@ -4,9 +4,13 @@ import uuid
 
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from kimidokku.auth import verify_api_key
+from kimidokku.main import app
 from kimidokku.tools.logs import _validate_command
+
+client = TestClient(app)
 
 
 class TestCommandInjection:
@@ -197,3 +201,17 @@ class TestCSRFProtection:
             await verify_csrf_token(request)
         assert exc_info.value.status_code == 403
         assert "CSRF token" in exc_info.value.detail
+
+
+class TestSecurityHeaders:
+    """Test security headers in responses."""
+
+    def test_security_headers_present(self):
+        """Security headers should be present in responses."""
+        response = client.get("/health")
+
+        assert response.headers.get("X-Content-Type-Options") == "nosniff"
+        assert response.headers.get("X-Frame-Options") == "DENY"
+        assert "Content-Security-Policy" in response.headers
+        assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+        assert "Permissions-Policy" in response.headers
