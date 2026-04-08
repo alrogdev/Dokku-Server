@@ -9,6 +9,8 @@ from kimidokku.config import get_settings
 from kimidokku.database import init_database
 from kimidokku.mcp_server import get_mcp_server
 from kimidokku.routers import webhooks
+from fastapi.templating import Jinja2Templates
+from kimidokku.routers import ui
 
 
 @asynccontextmanager
@@ -49,6 +51,13 @@ def create_app() -> FastAPI:
 
     # Include webhook router
     app.include_router(webhooks.router)
+
+    # Templates
+    templates = Jinja2Templates(directory="templates")
+    app.state.templates = templates
+    
+    # Include UI router
+    app.include_router(ui.router)
 
     return app
 
