@@ -66,3 +66,40 @@ async def dashboard(
             "version": "0.1.0",
         },
     )
+
+
+@router.get("/apps", response_class=HTMLResponse)
+async def apps_list(
+    request: Request,
+    templates=Depends(get_templates),
+    username: str = Depends(verify_basic_auth),
+):
+    """Apps list page."""
+    apps = await db.fetch_all("""
+        SELECT 
+            a.name,
+            a.auto_domain,
+            a.status,
+            a.last_deploy_at,
+            GROUP_CONCAT(cd.domain) as custom_domains
+        FROM apps a
+        LEFT JOIN custom_domains cd ON a.name = cd.app_name
+        GROUP BY a.name
+        ORDER BY a.created_at DESC
+    """)
+
+    # Parse custom domains
+    for app in apps:
+        if app["custom_domains"]:
+            app["custom_domains"] = app["custom_domains"].split(",")
+        else:
+            app["custom_domains"] = []
+
+    return templates.TemplateResponse(
+        "apps/list.html",
+        {
+            "request": request,
+            "apps": apps,
+            "version": "0.1.0",
+        },
+    )
