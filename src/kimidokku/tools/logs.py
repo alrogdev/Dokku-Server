@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+import shlex
 from typing import Optional
 
 from kimidokku.database import db
@@ -9,8 +10,20 @@ from kimidokku.mcp_server import mcp
 
 
 # Whitelist for run_command - only safe commands
-ALLOWED_COMMANDS = {"rake", "python", "node", "echo", "rails", "bundle"}
-FORBIDDEN_PATTERNS = [r";", r"\|", r"\$\(", r"`", r">>", r">"]
+ALLOWED_COMMANDS = {"rake", "python", "node", "echo", "rails", "bundle", "npm", "yarn"}
+FORBIDDEN_PATTERNS = [
+    r";",  # Command separator
+    r"\|",  # Pipe
+    r"\$\(",  # Command substitution $()
+    r"`",  # Backtick substitution
+    r">>",  # Append redirection
+    r">",  # Overwrite redirection
+    r"&&",  # AND operator
+    r"\|\|",  # OR operator
+    r"\$\{IFS\}",  # IFS substitution
+    r"\n",  # Newline
+    r"\r",  # Carriage return
+]
 
 
 @mcp.tool()
@@ -182,12 +195,15 @@ async def run_command(
     _validate_command(command)
 
     try:
-        # Run dokku run
+        # Parse command safely with shlex
+        cmd_args = shlex.split(command)
+
+        # Run dokku run with parsed arguments
         proc = await asyncio.create_subprocess_exec(
             "dokku",
             "run",
             app_name,
-            *command.split(),
+            *cmd_args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -207,20 +223,42 @@ async def run_command(
         }
 
 
-def _validate_command(command: str) -> None:
-    """Validate command for security."""
-    # Check for forbidden patterns (shell injection)
+def _validate_command(command: str) -> bool:
+    """Validate command for security.
+
+    Args:
+        command: The command string to validate
+
+    Returns:
+        True if command is valid
+
+    Raises:
+        ValueError: If command contains forbidden patterns or disallowed base command
+    """
+    if not command or not command.strip():
+        raise ValueError("Command cannot be empty")
+
+    command = command.strip()
+
+    # Check for forbidden patterns
     for pattern in FORBIDDEN_PATTERNS:
         if re.search(pattern, command):
             raise ValueError(f"Command contains forbidden pattern: {pattern}")
 
-    # Check that command starts with allowed base command
-    parts = command.strip().split()
-    if not parts:
+    # Parse command with shlex to properly handle quoted arguments
+    try:
+        args = shlex.split(command)
+    except ValueError as e:
+        raise ValueError(f"Invalid command format: {e}")
+
+    if not args:
         raise ValueError("Command cannot be empty")
 
-    base_cmd = parts[0]
+    # Check that command starts with allowed base command
+    base_cmd = args[0]
     if base_cmd not in ALLOWED_COMMANDS:
         raise ValueError(
-            f"Command '{base_cmd}' not allowed. Allowed: {', '.join(ALLOWED_COMMANDS)}"
+            f"Command '{base_cmd}' not allowed. Allowed: {', '.join(sorted(ALLOWED_COMMANDS))}"
         )
+
+    return True
