@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse
 from kimidokku.auth import verify_basic_auth
 from kimidokku.config import get_settings
 from kimidokku.database import db
+from kimidokku.middleware.rate_limiter import limiter
 
 router = APIRouter(tags=["ui"])
 
@@ -16,6 +17,7 @@ def get_templates(request: Request):
 
 
 @router.get("/", response_class=HTMLResponse)
+@limiter.limit("30/minute")
 async def dashboard(
     request: Request,
     templates=Depends(get_templates),

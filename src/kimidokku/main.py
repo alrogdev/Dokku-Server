@@ -2,15 +2,19 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from kimidokku.config import get_settings
 from kimidokku.database import init_database
 from kimidokku.mcp_server import get_mcp_server
-from kimidokku.routers import webhooks
+from kimidokku.middleware.rate_limiter import limiter
+from kimidokku.routers import ui, webhooks
 from fastapi.templating import Jinja2Templates
-from kimidokku.routers import ui
 
 
 @asynccontextmanager
@@ -23,6 +27,14 @@ async def lifespan(app: FastAPI):
     pass
 
 
+async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Handle rate limit exceeded errors."""
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded", "retry_after": exc.headers.get("Retry-After")},
+    )
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
     settings = get_settings()
@@ -33,6 +45,11 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+
+    # Add rate limiting
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # Mount MCP server
     mcp_server = get_mcp_server()
@@ -55,7 +72,7 @@ def create_app() -> FastAPI:
     # Templates
     templates = Jinja2Templates(directory="templates")
     app.state.templates = templates
-    
+
     # Include UI router
     app.include_router(ui.router)
 

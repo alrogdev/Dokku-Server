@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Header, HTTPException, Request, status
 
 from kimidokku.database import db
+from kimidokku.middleware.rate_limiter import limiter
 from kimidokku.tools.apps import _run_git_deploy
 from kimidokku.utils.webhook_verify import (
     extract_commit_hash,
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/webhook", tags=["webhooks"])
 
 
 @router.post("/github/{app_name}")
+@limiter.limit("10/minute")  # Limit webhook endpoints
 async def github_webhook(
     app_name: str,
     request: Request,
@@ -132,6 +134,7 @@ async def github_webhook(
 
 
 @router.post("/gitlab/{app_name}")
+@limiter.limit("10/minute")
 async def gitlab_webhook(
     app_name: str,
     request: Request,
