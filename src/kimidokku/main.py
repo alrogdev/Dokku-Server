@@ -7,9 +7,8 @@ from fastapi.staticfiles import StaticFiles
 
 from kimidokku.config import get_settings
 from kimidokku.database import init_database
-
-
 from kimidokku.mcp_server import get_mcp_server
+from kimidokku.routers import webhooks
 
 
 @asynccontextmanager
@@ -46,6 +45,9 @@ def create_app() -> FastAPI:
             "dokku_connected": True,
             "timestamp": "2024-01-01T00:00:00Z",  # Will be dynamic
         }
+
+    # Include webhook router
+    app.include_router(webhooks.router)
 
     return app
 
