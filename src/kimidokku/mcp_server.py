@@ -23,6 +23,7 @@ from kimidokku.tools import apps
 from kimidokku.tools import logs
 from kimidokku.tools import config_tools
 from kimidokku.tools import domains
+from kimidokku.tools import databases
 
 
 def get_mcp_server() -> FastMCP:
