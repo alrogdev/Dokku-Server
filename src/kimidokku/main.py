@@ -9,6 +9,9 @@ from kimidokku.config import get_settings
 from kimidokku.database import init_database
 
 
+from kimidokku.mcp_server import get_mcp_server
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
@@ -29,6 +32,10 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+
+    # Mount MCP server
+    mcp_server = get_mcp_server()
+    app.mount("/mcp", mcp_server.sse_app())
 
     # Health check endpoint
     @app.get("/health")
