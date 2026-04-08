@@ -34,7 +34,8 @@ def create_app() -> FastAPI:
 
     # Mount MCP server
     mcp_server = get_mcp_server()
-    app.mount("/mcp", mcp_server.sse_app())
+    mcp_app = mcp_server.http_app(path="/mcp")
+    app.mount("/mcp", mcp_app)
 
     # Health check endpoint
     @app.get("/health")
