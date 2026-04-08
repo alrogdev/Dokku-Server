@@ -24,6 +24,9 @@ async def dashboard(
     username: str = Depends(verify_basic_auth),
 ):
     """Dashboard page."""
+    # Get CSRF token
+    csrf = request.app.state.csrf
+
     # Get stats
     stats_result = await db.fetch_one("""
         SELECT 
@@ -66,6 +69,7 @@ async def dashboard(
             "stats": stats,
             "recent_deploys": recent_deploys,
             "version": "0.1.0",
+            "csrf_token": csrf.generate_token(),
         },
     )
 
@@ -77,6 +81,9 @@ async def apps_list(
     username: str = Depends(verify_basic_auth),
 ):
     """Apps list page."""
+    # Get CSRF token
+    csrf = request.app.state.csrf
+
     apps = await db.fetch_all("""
         SELECT 
             a.name,
@@ -103,6 +110,7 @@ async def apps_list(
             "request": request,
             "apps": apps,
             "version": "0.1.0",
+            "csrf_token": csrf.generate_token(),
         },
     )
 
@@ -115,6 +123,9 @@ async def app_detail(
     username: str = Depends(verify_basic_auth),
 ):
     """App detail page."""
+    # Get CSRF token
+    csrf = request.app.state.csrf
+
     app = await db.fetch_one(
         """
         SELECT 
@@ -140,6 +151,8 @@ async def app_detail(
                 "request": request,
                 "message": f"App '{app_name}' not found",
                 "message_type": "error",
+                "csrf_token": csrf.generate_token(),
+                "version": "0.1.0",
             },
         )
 
@@ -162,6 +175,7 @@ async def app_detail(
             "app": app,
             "deploy_history": deploy_history,
             "version": "0.1.0",
+            "csrf_token": csrf.generate_token(),
         },
     )
 
@@ -173,6 +187,9 @@ async def keys_list(
     username: str = Depends(verify_basic_auth),
 ):
     """API Keys management page."""
+    # Get CSRF token
+    csrf = request.app.state.csrf
+
     keys = await db.fetch_all("""
         SELECT 
             k.id,
@@ -193,6 +210,7 @@ async def keys_list(
             "request": request,
             "keys": keys,
             "version": "0.1.0",
+            "csrf_token": csrf.generate_token(),
         },
     )
 
@@ -204,6 +222,9 @@ async def security_page(
     username: str = Depends(verify_basic_auth),
 ):
     """Security/CrowdSec page."""
+    # Get CSRF token
+    csrf = request.app.state.csrf
+
     # Get bans from CrowdSec cache
     bans = await db.fetch_all("""
         SELECT ip, country, scenario, banned_at, expires_at
@@ -234,5 +255,6 @@ async def security_page(
             "ban_count": len(bans),
             "bans_24h": bans_24h_result["count"] if bans_24h_result else 0,
             "version": "0.1.0",
+            "csrf_token": csrf.generate_token(),
         },
     )

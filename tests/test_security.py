@@ -134,3 +134,66 @@ class TestAPIKeyValidation:
         with pytest.raises(HTTPException) as exc_info:
             await verify_api_key(valid_key)
         assert exc_info.value.status_code == 403
+
+
+class TestCSRFProtection:
+    """Test CSRF protection."""
+
+    def test_csrf_token_generation(self):
+        """CSRF token should be generated and validated."""
+        from kimidokku.csrf import CSRFProtection
+
+        csrf = CSRFProtection("test-secret-key")
+        token = csrf.generate_token()
+
+        assert token is not None
+        assert len(token) > 0
+        assert csrf.validate_token(token) is True
+
+    def test_csrf_token_validation_fails_for_invalid(self):
+        """Invalid CSRF token should fail validation."""
+        from kimidokku.csrf import CSRFProtection
+
+        csrf = CSRFProtection("test-secret-key")
+
+        assert csrf.validate_token("invalid-token") is False
+        assert csrf.validate_token("") is False
+
+    def test_csrf_token_from_different_secret_fails(self):
+        """Token from different secret should fail validation."""
+        from kimidokku.csrf import CSRFProtection
+
+        csrf1 = CSRFProtection("secret-key-1")
+        csrf2 = CSRFProtection("secret-key-2")
+
+        token = csrf1.generate_token()
+        assert csrf2.validate_token(token) is False
+
+    @pytest.mark.asyncio
+    async def test_verify_csrf_skips_safe_methods(self):
+        """GET/HEAD/OPTIONS requests should skip CSRF check."""
+        from unittest.mock import MagicMock
+        from kimidokku.csrf import verify_csrf_token
+
+        # Mock request for GET
+        request = MagicMock()
+        request.method = "GET"
+
+        result = await verify_csrf_token(request)
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_verify_csrf_blocks_missing_token(self):
+        """POST without CSRF token should be blocked."""
+        from unittest.mock import MagicMock
+        from kimidokku.csrf import verify_csrf_token
+
+        # Mock request for POST without token
+        request = MagicMock()
+        request.method = "POST"
+        request.headers = {}
+
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_csrf_token(request)
+        assert exc_info.value.status_code == 403
+        assert "CSRF token" in exc_info.value.detail

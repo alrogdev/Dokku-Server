@@ -10,6 +10,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from kimidokku.config import get_settings
+from kimidokku.csrf import get_csrf
 from kimidokku.database import init_database
 from kimidokku.mcp_server import get_mcp_server
 from kimidokku.middleware.rate_limiter import limiter
@@ -22,6 +23,11 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     await init_database()
+
+    # Initialize CSRF
+    csrf = get_csrf()
+    app.state.csrf = csrf
+
     yield
     # Shutdown
     pass
