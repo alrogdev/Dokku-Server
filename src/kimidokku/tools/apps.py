@@ -1,10 +1,17 @@
 """App Lifecycle MCP Tools."""
 
 import asyncio
+import re
 from datetime import datetime
 from typing import Optional
 
 from kimidokku.database import db
+from kimidokku.exceptions import (
+    AppNotFoundError,
+    CommandError,
+    PermissionDeniedError,
+    ValidationError,
+)
 from kimidokku.mcp_server import mcp
 
 
@@ -329,3 +336,160 @@ async def _run_image_deploy(
             "UPDATE apps SET status = 'error' WHERE name = ?",
             (app_name,),
         )
+
+
+@mcp.tool()
+async def create_app(
+    api_key_id: str,
+    name: str,
+    git_url: Optional[str] = None,
+    branch: str = "main",
+) -> dict:
+    """
+    Create a new Dokku app.
+
+    Args:
+        api_key_id: API key ID
+        name: App name (lowercase alphanumeric and hyphens only)
+        git_url: Optional git repository URL
+        branch: Git branch (default: main)
+
+    Returns:
+        App details including auto-generated domain
+    """
+    # Validate app name
+    if not re.match(r"^[a-z0-9-]+$", name):
+        raise ValidationError("App name must be lowercase alphanumeric and hyphens only")
+
+    if len(name) > 63:
+        raise ValidationError("App name must be 63 characters or less")
+
+    # Check if app already exists
+    existing = await db.fetch_one("SELECT name FROM apps WHERE name = ?", (name,))
+    if existing:
+        raise ValidationError(f"App '{name}' already exists")
+
+    # Check API key app limit
+    key_info = await db.fetch_one("SELECT max_apps FROM api_keys WHERE id = ?", (api_key_id,))
+    if not key_info:
+        raise PermissionDeniedError("Invalid API key")
+
+    app_count = await db.fetch_one(
+        "SELECT COUNT(*) as count FROM apps WHERE api_key_id = ?", (api_key_id,)
+    )
+    if app_count["count"] >= key_info["max_apps"]:
+        raise PermissionDeniedError(f"API key has reached max apps limit ({key_info['max_apps']})")
+
+    # Create app in Dokku
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "dokku",
+            "apps:create",
+            name,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise CommandError(f"Failed to create app: {stderr.decode()}")
+
+        # Generate auto domain
+        from kimidokku.config import get_settings
+
+        settings = get_settings()
+        auto_domain = f"{name}.{settings.kimidokku_domain}"
+
+        # Add domain to app
+        await asyncio.create_subprocess_exec(
+            "dokku",
+            "domains:add",
+            name,
+            auto_domain,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        # Store in database
+        await db.execute(
+            """
+            INSERT INTO apps (name, api_key_id, auto_domain, git_url, branch, status)
+            VALUES (?, ?, ?, ?, ?, 'stopped')
+            """,
+            (name, api_key_id, auto_domain, git_url, branch),
+        )
+
+        return {
+            "name": name,
+            "auto_domain": auto_domain,
+            "status": "stopped",
+            "message": f"App '{name}' created successfully",
+        }
+
+    except Exception as e:
+        # Cleanup on failure
+        await asyncio.create_subprocess_exec(
+            "dokku",
+            "apps:destroy",
+            name,
+            "--force",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        raise CommandError(f"Failed to create app: {e}")
+
+
+@mcp.tool()
+async def delete_app(
+    app_name: str,
+    api_key_id: str,
+    force: bool = False,
+) -> dict:
+    """
+    Delete a Dokku app and all associated data.
+
+    Args:
+        app_name: Name of the app to delete
+        api_key_id: API key ID
+        force: If True, delete without confirmation (required)
+
+    Returns:
+        Deletion status
+    """
+    if not force:
+        raise ValidationError("force=True is required to delete an app")
+
+    # Verify app ownership
+    app = await db.fetch_one(
+        "SELECT name FROM apps WHERE name = ? AND api_key_id = ?",
+        (app_name, api_key_id),
+    )
+
+    if not app:
+        raise AppNotFoundError(f"App '{app_name}' not found or access denied")
+
+    try:
+        # Delete from Dokku
+        proc = await asyncio.create_subprocess_exec(
+            "dokku",
+            "apps:destroy",
+            app_name,
+            "--force",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise CommandError(f"Failed to delete app: {stderr.decode()}")
+
+        # Delete from database (cascade will handle related records)
+        await db.execute("DELETE FROM apps WHERE name = ?", (app_name,))
+
+        return {
+            "success": True,
+            "message": f"App '{app_name}' deleted successfully",
+        }
+
+    except Exception as e:
+        raise CommandError(f"Failed to delete app: {e}")
