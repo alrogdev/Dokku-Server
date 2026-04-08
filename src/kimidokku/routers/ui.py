@@ -164,6 +164,37 @@ async def app_detail(
     )
 
 
+@router.get("/keys", response_class=HTMLResponse)
+async def keys_list(
+    request: Request,
+    templates=Depends(get_templates),
+    username: str = Depends(verify_basic_auth),
+):
+    """API Keys management page."""
+    keys = await db.fetch_all("""
+        SELECT 
+            k.id,
+            k.name,
+            k.created_at,
+            k.max_apps,
+            k.is_active,
+            COUNT(a.name) as app_count
+        FROM api_keys k
+        LEFT JOIN apps a ON k.id = a.api_key_id
+        GROUP BY k.id
+        ORDER BY k.created_at DESC
+    """)
+
+    return templates.TemplateResponse(
+        "keys/list.html",
+        {
+            "request": request,
+            "keys": keys,
+            "version": "0.1.0",
+        },
+    )
+
+
 @router.get("/security", response_class=HTMLResponse)
 async def security_page(
     request: Request,

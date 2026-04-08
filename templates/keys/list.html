@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}API Keys - KimiDokku MCP{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">API Keys</h1>
+    <button hx-get="/keys/new"
+            hx-target="#modal"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+        Create New Key
+    </button>
+</div>
+
+<!-- Keys Table -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apps</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for key in keys %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {{ key.name or 'Unnamed' }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                    {{ key.id[:8] }}...{{ key.id[-4:] }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ key.app_count }} / {{ key.max_apps }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if key.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ 'Active' if key.is_active else 'Revoked' }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ key.created_at }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <a href="/keys/{{ key.id }}/apps" class="text-blue-600 hover:text-blue-900 mr-3">View Apps</a>
+                    {% if key.is_active %}
+                    <button hx-post="/keys/{{ key.id }}/revoke"
+                            hx-confirm="Revoke this API key? Apps will remain but key won't work."
+                            class="text-red-600 hover:text-red-900">
+                        Revoke
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if not keys %}
+<div class="text-center py-12">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No API keys</h3>
+    <p class="mt-1 text-sm text-gray-500">Create an API key to get started.</p>
+</div>
+{% endif %}
+
+<!-- Modal placeholder -->
+<div id="modal"></div>
+{% endblock %}
