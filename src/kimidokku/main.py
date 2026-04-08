@@ -1,6 +1,8 @@
 """Main FastAPI application entry point."""
 
+import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -70,10 +72,23 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         """Health check endpoint."""
+        # Check Dokku connectivity
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "dokku",
+                "version",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await asyncio.wait_for(proc.communicate(), timeout=5.0)
+            dokku_connected = proc.returncode == 0
+        except Exception:
+            dokku_connected = False
+
         return {
             "status": "ok",
-            "dokku_connected": True,
-            "timestamp": "2024-01-01T00:00:00Z",  # Will be dynamic
+            "dokku_connected": dokku_connected,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     # Include webhook router
