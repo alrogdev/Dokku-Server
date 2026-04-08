@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
 
 -- Dokku applications
 CREATE TABLE IF NOT EXISTS apps (
-    name TEXT PRIMARY KEY CHECK (name REGEXP '^[a-z0-9-]+$'),
+    name TEXT PRIMARY KEY,
     api_key_id TEXT REFERENCES api_keys(id) ON DELETE RESTRICT,
     auto_domain TEXT,     -- generated: app-name.app.example.com
     git_url TEXT,

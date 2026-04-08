@@ -14,10 +14,17 @@ from slowapi.middleware import SlowAPIMiddleware
 from kimidokku.config import get_settings
 from kimidokku.csrf import get_csrf
 from kimidokku.database import init_database
+from kimidokku.exceptions import (
+    AppNotFoundError,
+    CommandError,
+    KimiDokkuError,
+    PermissionDeniedError,
+    ValidationError,
+)
 from kimidokku.mcp_server import get_mcp_server
 from kimidokku.middleware.rate_limiter import limiter
 from kimidokku.middleware.security_headers import SecurityHeadersMiddleware
-from kimidokku.routers import ui, webhooks
+from kimidokku.routers import api_keys, ui, webhooks
 from fastapi.templating import Jinja2Templates
 
 
@@ -44,6 +51,24 @@ async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded)
     )
 
 
+async def kimidokku_exception_handler(request: Request, exc: KimiDokkuError):
+    """Handle KimiDokku exceptions."""
+    status_code = 500
+    if isinstance(exc, AppNotFoundError):
+        status_code = 404
+    elif isinstance(exc, PermissionDeniedError):
+        status_code = 403
+    elif isinstance(exc, ValidationError):
+        status_code = 400
+    elif isinstance(exc, CommandError):
+        status_code = 500
+
+    return JSONResponse(
+        status_code=status_code,
+        content={"error": type(exc).__name__, "message": str(exc)},
+    )
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
     settings = get_settings()
@@ -62,6 +87,7 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(KimiDokkuError, kimidokku_exception_handler)
 
     # Mount MCP server
     mcp_server = get_mcp_server()
@@ -93,6 +119,9 @@ def create_app() -> FastAPI:
 
     # Include webhook router
     app.include_router(webhooks.router)
+
+    # Include API keys router
+    app.include_router(api_keys.router)
 
     # Templates
     templates = Jinja2Templates(directory="templates")

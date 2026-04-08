@@ -2,6 +2,7 @@
 
 import asyncio
 import sqlite3
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator, Optional
 
@@ -54,6 +55,7 @@ class Database:
                     await db.execute(stmt)
             await db.commit()
 
+    @asynccontextmanager
     async def get_connection(self) -> AsyncGenerator[aiosqlite.Connection, None]:
         """Get database connection."""
         if not self._db_path:
