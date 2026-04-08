@@ -18,6 +18,10 @@ mcp = FastMCP(
 )
 
 
+# Import tools to register them
+from kimidokku.tools import apps
+
+
 def get_mcp_server() -> FastMCP:
     """Get MCP server instance."""
     return mcp
