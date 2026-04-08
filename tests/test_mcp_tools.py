@@ -26,3 +26,14 @@ class TestMCPServer:
         assert "get_app_status" in tool_names
         assert "deploy_git" in tool_names
         assert "deploy_image" in tool_names
+
+    @pytest.mark.asyncio
+    async def test_logs_tools_registered(self):
+        """Test that logs tools are registered."""
+        mcp = get_mcp_server()
+        tools = await mcp.list_tools()
+        tool_names = [tool.name for tool in tools]
+
+        assert "get_logs" in tool_names
+        assert "restart_app" in tool_names
+        assert "run_command" in tool_names

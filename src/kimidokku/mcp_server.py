@@ -20,6 +20,7 @@ mcp = FastMCP(
 
 # Import tools to register them
 from kimidokku.tools import apps
+from kimidokku.tools import logs
 
 
 def get_mcp_server() -> FastMCP:
