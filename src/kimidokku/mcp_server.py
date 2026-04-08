@@ -25,6 +25,12 @@ from kimidokku.tools import config_tools
 from kimidokku.tools import domains
 from kimidokku.tools import databases
 
+# Import resources to register them
+from kimidokku.resources import app_resources
+
+# Import prompts to register them
+from kimidokku.prompts import deployment_prompts
+
 
 def get_mcp_server() -> FastMCP:
     """Get MCP server instance."""
