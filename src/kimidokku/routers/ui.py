@@ -162,3 +162,44 @@ async def app_detail(
             "version": "0.1.0",
         },
     )
+
+
+@router.get("/security", response_class=HTMLResponse)
+async def security_page(
+    request: Request,
+    templates=Depends(get_templates),
+    username: str = Depends(verify_basic_auth),
+):
+    """Security/CrowdSec page."""
+    # Get bans from CrowdSec cache
+    bans = await db.fetch_all("""
+        SELECT ip, country, scenario, banned_at, expires_at
+        FROM crowdsec_cache
+        WHERE expires_at > datetime('now')
+        ORDER BY banned_at DESC
+    """)
+
+    # Get stats
+    from datetime import datetime, timedelta
+
+    day_ago = (datetime.now() - timedelta(days=1)).isoformat()
+
+    bans_24h_result = await db.fetch_one(
+        """
+        SELECT COUNT(*) as count
+        FROM crowdsec_cache
+        WHERE banned_at > ?
+    """,
+        (day_ago,),
+    )
+
+    return templates.TemplateResponse(
+        "security.html",
+        {
+            "request": request,
+            "bans": bans,
+            "ban_count": len(bans),
+            "bans_24h": bans_24h_result["count"] if bans_24h_result else 0,
+            "version": "0.1.0",
+        },
+    )
