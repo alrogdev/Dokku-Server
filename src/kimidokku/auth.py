@@ -1,6 +1,7 @@
 """Authentication and authorization utilities."""
 
 import secrets
+import uuid
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Security, status
@@ -25,11 +26,11 @@ async def verify_api_key(api_key: str = Security(api_key_header)) -> str:
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
-    # Validate UUID format
+    # Validate UUIDv4 format
     try:
-        # Basic UUID validation (will be enhanced with proper validation)
-        if len(api_key) < 32:
-            raise ValueError("Invalid API key format")
+        parsed = uuid.UUID(api_key)
+        if parsed.version != 4:
+            raise ValueError("Not a UUIDv4")
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -110,8 +111,6 @@ async def verify_basic_auth(
 
 def generate_api_key() -> str:
     """Generate a new cryptographically secure API key (UUID4 format)."""
-    import uuid
-
     return str(uuid.uuid4())
 
 

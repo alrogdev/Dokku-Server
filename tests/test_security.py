@@ -1,7 +1,11 @@
 """Security tests for KimiDokku MCP."""
 
-import pytest
+import uuid
 
+import pytest
+from fastapi import HTTPException
+
+from kimidokku.auth import verify_api_key
 from kimidokku.tools.logs import _validate_command
 
 
@@ -71,3 +75,62 @@ class TestCommandInjection:
         """Test that shlex parsing handles quoted arguments correctly."""
         # This should pass - quoted string is a single argument
         assert _validate_command('python -c "print(1)"') is True
+
+
+class TestAPIKeyValidation:
+    """Test API key format validation."""
+
+    @pytest.mark.asyncio
+    async def test_valid_uuid4_accepted(self, monkeypatch):
+        """Valid UUIDv4 should be accepted."""
+        valid_key = str(uuid.uuid4())
+
+        # Mock database to return valid key
+        async def mock_fetch_one(query, params):
+            if params[0] == valid_key:
+                return {"id": valid_key, "is_active": True}
+            return None
+
+        monkeypatch.setattr("kimidokku.auth.db.fetch_one", mock_fetch_one)
+
+        result = await verify_api_key(valid_key)
+        assert result == valid_key
+
+    @pytest.mark.asyncio
+    async def test_invalid_uuid_rejected(self):
+        """Invalid UUID format should be rejected."""
+        invalid_keys = [
+            "not-a-uuid",
+            "12345",  # Too short
+            "550e8400-e29b-41d4-a716-446655440000-invalid",  # Too long
+            "550e8400-e29b-11d4-a716-446655440000",  # UUIDv1, not v4
+            "550e8400-e29b-41d4-a716-44665544000g",  # Invalid character
+        ]
+
+        for key in invalid_keys:
+            with pytest.raises(HTTPException) as exc_info:
+                await verify_api_key(key)
+            assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_empty_key_rejected(self):
+        """Empty API key should be rejected."""
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_api_key(None)
+        assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_revoked_key_rejected(self, monkeypatch):
+        """Revoked API key should be rejected."""
+        valid_key = str(uuid.uuid4())
+
+        async def mock_fetch_one(query, params):
+            if params[0] == valid_key:
+                return {"id": valid_key, "is_active": False}
+            return None
+
+        monkeypatch.setattr("kimidokku.auth.db.fetch_one", mock_fetch_one)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_api_key(valid_key)
+        assert exc_info.value.status_code == 403
