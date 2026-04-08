@@ -103,3 +103,62 @@ async def apps_list(
             "version": "0.1.0",
         },
     )
+
+
+@router.get("/apps/{app_name}", response_class=HTMLResponse)
+async def app_detail(
+    app_name: str,
+    request: Request,
+    templates=Depends(get_templates),
+    username: str = Depends(verify_basic_auth),
+):
+    """App detail page."""
+    app = await db.fetch_one(
+        """
+        SELECT 
+            a.name,
+            a.auto_domain,
+            a.git_url,
+            a.branch,
+            a.status,
+            a.created_at,
+            a.last_deploy_at,
+            a.tls_status,
+            a.tls_expires_at
+        FROM apps a
+        WHERE a.name = ?
+    """,
+        (app_name,),
+    )
+
+    if not app:
+        return templates.TemplateResponse(
+            "base.html",
+            {
+                "request": request,
+                "message": f"App '{app_name}' not found",
+                "message_type": "error",
+            },
+        )
+
+    # Get deploy history
+    deploy_history = await db.fetch_all(
+        """
+        SELECT triggered_by, git_ref, status, started_at
+        FROM deploy_logs
+        WHERE app_name = ?
+        ORDER BY started_at DESC
+        LIMIT 10
+    """,
+        (app_name,),
+    )
+
+    return templates.TemplateResponse(
+        "apps/detail.html",
+        {
+            "request": request,
+            "app": app,
+            "deploy_history": deploy_history,
+            "version": "0.1.0",
+        },
+    )
