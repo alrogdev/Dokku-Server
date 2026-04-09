@@ -14,6 +14,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from kimidokku.config import get_settings
 from kimidokku.csrf import get_csrf
 from kimidokku.database import init_database
+from kimidokku.dokku_sync import sync_apps_from_dokku
 from kimidokku.exceptions import (
     AppNotFoundError,
     CommandError,
@@ -37,6 +38,13 @@ async def lifespan(app: FastAPI):
     # Initialize CSRF
     csrf = get_csrf()
     app.state.csrf = csrf
+
+    # Sync apps from Dokku
+    try:
+        sync_result = await sync_apps_from_dokku()
+        print(f"Dokku sync complete: {sync_result}")
+    except Exception as e:
+        print(f"Dokku sync failed (expected if no dokku access): {e}")
 
     yield
     # Shutdown
