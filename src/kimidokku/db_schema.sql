@@ -77,6 +77,19 @@ CREATE TABLE IF NOT EXISTS config_history (
     created_by TEXT  -- 'mcp', 'ui', etc.
 );
 
+-- Background tasks tracking
+CREATE TABLE IF NOT EXISTS background_tasks (
+    id TEXT PRIMARY KEY,  -- UUID4
+    task_type TEXT NOT NULL,  -- 'git_deploy', 'image_deploy', etc.
+    app_name TEXT REFERENCES apps(name) ON DELETE SET NULL,
+    deploy_id INTEGER REFERENCES deploy_logs(id) ON DELETE SET NULL,
+    status TEXT CHECK (status IN ('pending', 'running', 'success', 'failed', 'cancelled')) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP,
+    finished_at TIMESTAMP,
+    error_message TEXT
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_apps_api_key ON apps(api_key_id);
 CREATE INDEX IF NOT EXISTS idx_apps_status ON apps(status);
@@ -85,3 +98,5 @@ CREATE INDEX IF NOT EXISTS idx_db_services_app ON db_services(app_name);
 CREATE INDEX IF NOT EXISTS idx_deploy_logs_app ON deploy_logs(app_name);
 CREATE INDEX IF NOT EXISTS idx_deploy_logs_started ON deploy_logs(started_at);
 CREATE INDEX IF NOT EXISTS idx_config_history_app ON config_history(app_name);
+CREATE INDEX IF NOT EXISTS idx_background_tasks_app ON background_tasks(app_name);
+CREATE INDEX IF NOT EXISTS idx_background_tasks_status ON background_tasks(status);

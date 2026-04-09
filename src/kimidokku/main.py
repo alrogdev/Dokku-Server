@@ -77,7 +77,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="KimiDokku MCP",
         description="MCP-First PaaS Platform for Dokku",
-        version="0.1.0",
+        version="1.0.0",
         lifespan=lifespan,
     )
 

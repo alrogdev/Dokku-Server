@@ -27,7 +27,7 @@ class TestGitHubWebhook:
         mock_db.fetch_one = AsyncMock(return_value=None)
 
         response = client.post(
-            "/webhook/github/test-app",
+            "/webhook/github/missing-app-unique",
             headers={"X-Hub-Signature-256": "sha256=test"},
             json={"ref": "refs/heads/main"},
         )
@@ -39,7 +39,7 @@ class TestGitHubWebhook:
         """Test webhook with invalid signature."""
         mock_db.fetch_one = AsyncMock(
             return_value={
-                "name": "test-app",
+                "name": "test-app-unique",
                 "branch": "main",
                 "git_url": "https://github.com/user/repo.git",
                 "api_key_id": "key-123",
@@ -48,7 +48,7 @@ class TestGitHubWebhook:
         )
 
         response = client.post(
-            "/webhook/github/test-app",
+            "/webhook/github/test-app-unique",
             headers={"X-Hub-Signature-256": "sha256=invalid"},
             json={"ref": "refs/heads/main", "commits": []},
         )

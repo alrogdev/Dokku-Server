@@ -31,7 +31,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = csp
 
         # Strict Transport Security (HTTPS only)
-        # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains; preload"
+        )
 
         # Referrer Policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

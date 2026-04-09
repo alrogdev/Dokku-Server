@@ -11,6 +11,13 @@ AI-native PaaS platform for Dokku with MCP (Model Context Protocol) interface.
 - 🚀 **App Lifecycle** — Create, deploy, configure, scale, and delete apps
 - 🗄️ **Database Services** — PostgreSQL, Redis, MySQL, MongoDB integration
 
+## Documentation
+
+- **[MCP-USAGE.md](MCP-USAGE.md)** — Подключение MCP клиентов и руководство для AI-агентов
+- **[DEPLOYMENT-PLAN.md](DEPLOYMENT-PLAN.md)** — План развертывания на Dokku сервер
+- **[CODE-REVIEW-1.md](CODE-REVIEW-1.md)** — Security audit и исправления
+- **[CHANGELOG.md](CHANGELOG.md)** — История изменений
+
 ## Quick Start
 
 ```bash

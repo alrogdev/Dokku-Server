@@ -3,6 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from kimidokku.csrf import get_csrf
 from kimidokku.main import app
 
 
@@ -11,6 +12,18 @@ def client():
     """Create a test client with database initialization."""
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture
+def csrf_token():
+    """Generate a valid CSRF token for testing."""
+    csrf = get_csrf()
+    return csrf.generate_token()
+
+
+def get_csrf_headers(csrf_token):
+    """Get headers dict with CSRF token for POST/DELETE requests."""
+    return {"X-CSRF-Token": csrf_token}
 
 
 class TestSecurityHeaders:
@@ -42,11 +55,14 @@ class TestRateLimiting:
 class TestAPIKeyLifecycle:
     """Test full API key lifecycle."""
 
-    def test_create_list_revoke_delete(self, client):
+    def test_create_list_revoke_delete(self, client, csrf_token):
         """Full CRUD cycle for API keys."""
         # Create
         create_resp = client.post(
-            "/api/keys", json={"name": "lifecycle-test"}, auth=("admin", "changeme")
+            "/api/keys",
+            json={"name": "lifecycle-test"},
+            auth=("admin", "changeme"),
+            headers=get_csrf_headers(csrf_token),
         )
         assert create_resp.status_code == 200
         key_id = create_resp.json()["id"]
@@ -56,9 +72,17 @@ class TestAPIKeyLifecycle:
         assert list_resp.status_code == 200
 
         # Revoke
-        revoke_resp = client.post(f"/api/keys/{key_id}/revoke", auth=("admin", "changeme"))
+        revoke_resp = client.post(
+            f"/api/keys/{key_id}/revoke",
+            auth=("admin", "changeme"),
+            headers=get_csrf_headers(csrf_token),
+        )
         assert revoke_resp.status_code == 200
 
         # Delete
-        delete_resp = client.delete(f"/api/keys/{key_id}", auth=("admin", "changeme"))
+        delete_resp = client.delete(
+            f"/api/keys/{key_id}",
+            auth=("admin", "changeme"),
+            headers=get_csrf_headers(csrf_token),
+        )
         assert delete_resp.status_code == 200

@@ -2,10 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from kimidokku.auth import verify_basic_auth
+from kimidokku.csrf import verify_csrf_token
 from kimidokku.database import db
 
 router = APIRouter(prefix="/api/keys", tags=["api-keys"])
@@ -25,7 +26,12 @@ class APIKeyCreateResponse(BaseModel):
 
 
 @router.post("/", response_model=APIKeyCreateResponse)
-async def create_api_key(data: APIKeyCreate, username: str = Depends(verify_basic_auth)):
+async def create_api_key(
+    data: APIKeyCreate,
+    request: Request,
+    username: str = Depends(verify_basic_auth),
+    _: bool = Depends(verify_csrf_token),
+):
     key_id = str(uuid.uuid4())
 
     await db.execute(
@@ -76,7 +82,12 @@ async def get_api_key(key_id: str, username: str = Depends(verify_basic_auth)):
 
 
 @router.post("/{key_id}/revoke")
-async def revoke_api_key(key_id: str, username: str = Depends(verify_basic_auth)):
+async def revoke_api_key(
+    key_id: str,
+    request: Request,
+    username: str = Depends(verify_basic_auth),
+    _: bool = Depends(verify_csrf_token),
+):
     key = await db.fetch_one("SELECT id FROM api_keys WHERE id = ?", (key_id,))
     if not key:
         raise HTTPException(status_code=404, detail="API key not found")
@@ -86,7 +97,12 @@ async def revoke_api_key(key_id: str, username: str = Depends(verify_basic_auth)
 
 
 @router.delete("/{key_id}")
-async def delete_api_key(key_id: str, username: str = Depends(verify_basic_auth)):
+async def delete_api_key(
+    key_id: str,
+    request: Request,
+    username: str = Depends(verify_basic_auth),
+    _: bool = Depends(verify_csrf_token),
+):
     key = await db.fetch_one("SELECT id FROM api_keys WHERE id = ?", (key_id,))
     if not key:
         raise HTTPException(status_code=404, detail="API key not found")

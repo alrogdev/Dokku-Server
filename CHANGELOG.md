@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.1] - 2026-04-08
+
+### Security 🔒
+- Enabled HSTS (Strict-Transport-Security) header with `max-age=31536000; includeSubDomains; preload`
+- Registry password now passed via stdin instead of CLI arguments (prevents exposure in process list)
+- Added CSRF protection enforcement to API Keys management endpoints (`/api/keys/*`)
+
+### Added ✨
+- Background task tracking module (`tasks.py`) with persistent storage
+- New `background_tasks` database table for monitoring async operations
+- Task manager with status tracking: pending, running, success, failed, cancelled
+
+### Fixed 🐛
+- Fixed version number in `main.py`: 0.1.0 → 1.0.0
+- Fixed `_run_image_deploy` to clear registry password from memory after use
+
 ## [1.0.0] - 2026-04-08
 
 ### Security 🔒

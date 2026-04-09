@@ -6,6 +6,7 @@ import shlex
 from typing import Optional
 
 from kimidokku.database import db
+from kimidokku.exceptions import AppNotFoundError, CommandError, ValidationError
 from kimidokku.mcp_server import mcp
 
 
@@ -44,7 +45,7 @@ async def get_logs(
     )
 
     if not app:
-        raise ValueError(f"App '{app_name}' not found or access denied")
+        raise AppNotFoundError(f"App '{app_name}' not found or access denied")
 
     try:
         # Run dokku logs
@@ -62,7 +63,7 @@ async def get_logs(
 
         if proc.returncode != 0:
             error_msg = stderr.decode() if stderr else "Failed to get logs"
-            raise RuntimeError(error_msg)
+            raise CommandError(error_msg)
 
         # Parse log lines
         logs = []
@@ -79,7 +80,7 @@ async def get_logs(
         return logs[:lines]
 
     except Exception as e:
-        raise RuntimeError(f"Failed to get logs: {e}")
+        raise CommandError(f"Failed to get logs: {e}")
 
 
 def _parse_log_line(line: str) -> dict:
@@ -133,7 +134,7 @@ async def restart_app(app_name: str, api_key_id: str) -> dict:
     )
 
     if not app:
-        raise ValueError(f"App '{app_name}' not found or access denied")
+        raise AppNotFoundError(f"App '{app_name}' not found or access denied")
 
     try:
         # Run dokku ps:restart
@@ -159,16 +160,12 @@ async def restart_app(app_name: str, api_key_id: str) -> dict:
             }
         else:
             error_msg = stderr.decode() if stderr else "Unknown error"
-            return {
-                "success": False,
-                "message": f"Failed to restart app: {error_msg}",
-            }
+            raise CommandError(f"Failed to restart app: {error_msg}")
 
+    except CommandError:
+        raise
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Failed to restart app: {e}",
-        }
+        raise CommandError(f"Failed to restart app: {e}")
 
 
 @mcp.tool()
@@ -189,10 +186,13 @@ async def run_command(
     )
 
     if not app:
-        raise ValueError(f"App '{app_name}' not found or access denied")
+        raise AppNotFoundError(f"App '{app_name}' not found or access denied")
 
     # Security: Validate command
-    _validate_command(command)
+    try:
+        _validate_command(command)
+    except ValueError as e:
+        raise ValidationError(str(e))
 
     try:
         # Parse command safely with shlex
@@ -216,11 +216,7 @@ async def run_command(
         }
 
     except Exception as e:
-        return {
-            "stdout": "",
-            "stderr": str(e),
-            "exit_code": -1,
-        }
+        raise CommandError(f"Failed to run command: {e}")
 
 
 def _validate_command(command: str) -> bool:

@@ -63,12 +63,12 @@ async def dashboard(
     """)
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "stats": stats,
             "recent_deploys": recent_deploys,
-            "version": "0.1.0",
+            "version": "1.0.1",
             "csrf_token": csrf.generate_token(),
         },
     )
@@ -105,11 +105,11 @@ async def apps_list(
             app["custom_domains"] = []
 
     return templates.TemplateResponse(
+        request,
         "apps/list.html",
         {
-            "request": request,
             "apps": apps,
-            "version": "0.1.0",
+            "version": "1.0.1",
             "csrf_token": csrf.generate_token(),
         },
     )
@@ -146,13 +146,13 @@ async def app_detail(
 
     if not app:
         return templates.TemplateResponse(
+            request,
             "base.html",
             {
-                "request": request,
                 "message": f"App '{app_name}' not found",
                 "message_type": "error",
                 "csrf_token": csrf.generate_token(),
-                "version": "0.1.0",
+                "version": "1.0.1",
             },
         )
 
@@ -169,12 +169,12 @@ async def app_detail(
     )
 
     return templates.TemplateResponse(
+        request,
         "apps/detail.html",
         {
-            "request": request,
             "app": app,
             "deploy_history": deploy_history,
-            "version": "0.1.0",
+            "version": "1.0.1",
             "csrf_token": csrf.generate_token(),
         },
     )
@@ -205,11 +205,11 @@ async def keys_list(
     """)
 
     return templates.TemplateResponse(
+        request,
         "keys/list.html",
         {
-            "request": request,
             "keys": keys,
-            "version": "0.1.0",
+            "version": "1.0.1",
             "csrf_token": csrf.generate_token(),
         },
     )
@@ -248,13 +248,13 @@ async def security_page(
     )
 
     return templates.TemplateResponse(
+        request,
         "security.html",
         {
-            "request": request,
             "bans": bans,
             "ban_count": len(bans),
             "bans_24h": bans_24h_result["count"] if bans_24h_result else 0,
-            "version": "0.1.0",
+            "version": "1.0.1",
             "csrf_token": csrf.generate_token(),
         },
     )

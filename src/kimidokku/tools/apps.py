@@ -13,6 +13,7 @@ from kimidokku.exceptions import (
     ValidationError,
 )
 from kimidokku.mcp_server import mcp
+from kimidokku.tasks import task_manager
 
 
 @mcp.tool()
@@ -143,7 +144,12 @@ async def deploy_git(
     )
 
     # Trigger async deployment (non-blocking)
-    asyncio.create_task(_run_git_deploy(app_name, app["git_url"], branch, deploy_id))
+    await task_manager.create_task(
+        task_type="git_deploy",
+        coro=_run_git_deploy(app_name, app["git_url"], branch, deploy_id),
+        app_name=app_name,
+        deploy_id=deploy_id,
+    )
 
     return {
         "deploy_id": deploy_id,
@@ -251,8 +257,11 @@ async def deploy_image(
     )
 
     # Trigger async deployment
-    asyncio.create_task(
-        _run_image_deploy(app_name, image_url, registry_user, registry_pass, deploy_id)
+    await task_manager.create_task(
+        task_type="image_deploy",
+        coro=_run_image_deploy(app_name, image_url, registry_user, registry_pass, deploy_id),
+        app_name=app_name,
+        deploy_id=deploy_id,
     )
 
     return {
@@ -274,6 +283,7 @@ async def _run_image_deploy(
     try:
         # Set registry auth if provided
         if registry_user and registry_pass:
+            # Set username
             await asyncio.create_subprocess_exec(
                 "dokku",
                 "registry:set",
@@ -283,7 +293,20 @@ async def _run_image_deploy(
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            # Note: In production, use docker login or dokku registry-login
+            # Set password via stdin (more secure than CLI argument)
+            proc = await asyncio.create_subprocess_exec(
+                "dokku",
+                "registry:set",
+                app_name,
+                "password",
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            # Pass password via stdin to avoid exposing in process list
+            await proc.communicate(input=registry_pass.encode())
+            # Clear password from memory
+            registry_pass = ""
 
         # Run dokku git:from-image
         proc = await asyncio.create_subprocess_exec(
