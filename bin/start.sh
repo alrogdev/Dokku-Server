@@ -1,4 +1,4 @@
 #!/bin/bash
 export PYTHONPATH=/app/src:$PYTHONPATH
 cd /app
-exec python -m kimidokku.main
+exec /app/.heroku/python/bin/python -m kimidokku.main
